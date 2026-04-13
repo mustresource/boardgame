@@ -950,12 +950,13 @@ const AUTO_SHEET_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTArnQnI
 async function autoLoadSheet(){
   toast('⏳ 載入桌遊清單中…')
   try{
-    const proxy = "https://corsproxy.io/?" + encodeURIComponent(AUTO_SHEET_URL)
-    const res = await fetch(proxy)
+    // 加上時間戳避免瀏覽器快取
+    const proxy = "https://corsproxy.io/?" + encodeURIComponent(AUTO_SHEET_URL + '&t=' + Date.now())
+    const res = await fetch(proxy, { cache: 'no-store' })
     if(!res.ok) throw new Error(`HTTP ${res.status}`)
     const text = await res.text()
     if(!text || text.trim().length===0) throw new Error('回傳內容為空')
-    if(text.trim().startsWith('<')) throw new Error('試算表未公開發佈，請確認發佈設定')
+    if(text.trim().startsWith('<')) throw new Error('試算表未公開發佈')
     const rows = parseCSV(text)
     if(rows.length<=1) throw new Error('試算表沒有資料列')
     rows.shift()
@@ -967,7 +968,7 @@ async function autoLoadSheet(){
     toast(`✅ 已載入 ${data.length} 款桌遊`)
   }catch(e){
     console.error('自動載入失敗:', e)
-    toast(`⚠️ ${e.message}`, true)
+    toast(`⚠️ 載入失敗：${e.message}，顯示本地快取`, true)
     loadLocal()
   }
 }
