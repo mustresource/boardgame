@@ -622,7 +622,7 @@ function loadCSVFile(e){
   e.target.value = ''
 }
 
-/* ─── 方法二：透過 corsproxy.io 代理 ─── */
+/* ─── 方法二：透過 Cloudflare Worker 代理 ─── */
 async function loadSheet(){
   const input = document.getElementById('sheetUrl').value.trim()
   if(!input){ toast('請先輸入網址', true); return }
@@ -634,11 +634,11 @@ async function loadSheet(){
   const gid = gidMatch ? gidMatch[1] : '0'
 
   const url = `https://docs.google.com/spreadsheets/d/${sheetId}/export?format=csv&gid=${gid}`
-  const proxy = "https://corsproxy.io/?" + encodeURIComponent(url)
+  const proxyUrl = WORKER_URL + '?url=' + encodeURIComponent(url)
 
   toast('⏳ 載入中…')
   try{
-    const res = await fetch(proxy)
+    const res = await fetch(proxyUrl)
     if(!res.ok) throw new Error(`HTTP ${res.status}`)
     const text = await res.text()
     const rows = parseCSV(text)
@@ -946,13 +946,13 @@ function importList(e){
 
 /* ─── 自動載入試算表 ─── */
 const AUTO_SHEET_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTArnQnI9abxqLV65K9AzeHKD-t5y1TBvXfgruT9wtg9WM8PKTpGJ1elVGjoBB6HBL5grYTg7etwsCQ/pub?gid=0&single=true&output=csv'
+const WORKER_URL = 'https://shrill-band-02b0.boardgame888888.workers.dev'
 
 async function autoLoadSheet(){
   toast('⏳ 載入桌遊清單中…')
   try{
-    // 加上時間戳避免瀏覽器快取
-    const proxy = "https://corsproxy.io/?" + encodeURIComponent(AUTO_SHEET_URL + '&t=' + Date.now())
-    const res = await fetch(proxy, { cache: 'no-store' })
+    const proxyUrl = WORKER_URL + '?url=' + encodeURIComponent(AUTO_SHEET_URL)
+    const res = await fetch(proxyUrl, { cache: 'no-store' })
     if(!res.ok) throw new Error(`HTTP ${res.status}`)
     const text = await res.text()
     if(!text || text.trim().length===0) throw new Error('回傳內容為空')
@@ -968,7 +968,7 @@ async function autoLoadSheet(){
     toast(`✅ 已載入 ${data.length} 款桌遊`)
   }catch(e){
     console.error('自動載入失敗:', e)
-    toast(`⚠️ 載入失敗：${e.message}，顯示本地快取`, true)
+    toast(`⚠️ 載入失敗：${e.message}`, true)
     loadLocal()
   }
 }
